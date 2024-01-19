@@ -39,7 +39,7 @@ const App = () => {
           const numberInColumnA = rows[i][0];
 
           if (typeof numberInColumnA === "number") {
-            const word = rows[i][1];
+            const word = rows[i][1].trim();
             const content = rows[i].slice(2).filter(Boolean).join("__");
             processedData.push({ word, content });
           }
