@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import "./App.css";
 import { prettyDOM } from "@testing-library/react";
 
-const path = `http://localhost:5000`;
+const path = `https://gitabackend.onrender.com`;
 
 const App = () => {
   const [file, setFile] = useState(null);
