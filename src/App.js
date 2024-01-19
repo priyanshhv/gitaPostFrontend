@@ -1,74 +1,84 @@
-// Import React and other dependencies
-import React, { useState , useEffect} from "react";
+import React, { useState } from "react";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import "./App.css";
+import { prettyDOM } from "@testing-library/react";
+
+const path = `http://localhost:5000`;
 
 const App = () => {
-  // Use state variables to manage form data
-  const [page, setPage] = useState(8); // Default page value
-  const [content, setContent] = useState("");
+  const [file, setFile] = useState(null);
+  const [showGif, setShowGif] = useState(false); // State to control the display of the GIF
 
-  useEffect(() => {
-    const fetchEmptySearch = async () => {
-      try {
-        const response = await axios.get(
-          "https://gitabackend.onrender.com/api/search?searchString="
-        );
-        setPage(response.data?.pages.length + 1);
-      } catch (error) {
-        console.error("Error fetching empty search:", error);
-      }
-    };
+  const handleFileUpload = (e) => {
+    const uploadedFile = e.target.files[0];
+    setFile(uploadedFile);
+  };
 
-    fetchEmptySearch();
-  }, []);
-
-  // Function to handle form submission and API call
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Make a POST request to the API endpoint
-      const response = await axios.post("https://gitabackend.onrender.com/api/pages", {
-        page,
-        content,
-      });
+      if (!file) {
+        console.error("Please select an Excel file.");
+        return;
+      }
 
-      // console.log("Response:", response.data); // Log the response data
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const binaryString = event.target.result;
+        const workbook = XLSX.read(binaryString, { type: "binary" });
 
-      // Reset form fields after successful submission
-      setPage((page)=>page+1); // Set default page value
-      setContent(""); // Clear content field
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        const processedData = [];
+
+        for (let i = 0; i < rows.length; i++) {
+          const numberInColumnA = rows[i][0];
+
+          if (typeof numberInColumnA === "number") {
+            const word = rows[i][1];
+            const content = rows[i].slice(2).filter(Boolean).join("__");
+            processedData.push({ word, content });
+          }
+        }
+// console.log(processedData);
+        // Simulate a POST request (replace with your actual API call)
+        const response = await axios.post(`${path}/api/words`, processedData);
+
+        // Show the GIF after successful submission
+        setShowGif(true);
+      };
+
+      reader.readAsBinaryString(file);
     } catch (error) {
-      console.error("Error:", error); // Log any errors
+      console.error("Error:", error);
     }
   };
 
   return (
     <div className="app">
       <form onSubmit={handleSubmit}>
-        {/* Page input field */}
         <label>
-          Page:
-          <input
-            type="number"
-            value={page}
-            onChange={(e) => setPage(e.target.value)}
-          />
+          Upload Excel File:
+          <input type="file" accept=".xls, .xlsx" onChange={handleFileUpload} />
         </label>
 
-        {/* Content input field */}
-        <label>
-          Content:
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </label>
-
-        {/* Submit button */}
         <button type="submit">Submit</button>
       </form>
+
+      {showGif && (
+        <iframe
+          src="https://giphy.com/embed/48HUcXwM5Yt6E"
+          width="480"
+          height="353"
+          className="giphy-embed"
+          title="Bhagavad Gita Giphy"
+          allowFullScreen
+        ></iframe>
+      )}
     </div>
   );
 };
